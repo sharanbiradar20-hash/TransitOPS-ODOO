@@ -219,8 +219,8 @@ const TripTable = ({ trips = [], onDispatch, onComplete, onCancel, userRole }) =
                 {canPerformActions && (
                   <td>
                     <div className="table-actions" style={{ justifyContent: 'flex-end', gap: '0.4rem' }}>
-                      {/* Dispatch button - shown only for DRAFT trips */}
-                      {trip.status === 'DRAFT' && (
+                      {/* Dispatch button - shown only for DRAFT trips and FLEET_MANAGER */}
+                      {trip.status === 'DRAFT' && userRole === 'FLEET_MANAGER' && (
                         <button
                           onClick={() => onDispatch(trip.id)}
                           title="Dispatch Trip"
@@ -234,8 +234,8 @@ const TripTable = ({ trips = [], onDispatch, onComplete, onCancel, userRole }) =
                         </button>
                       )}
 
-                      {/* Complete button - shown only for DISPATCHED trips */}
-                      {trip.status === 'DISPATCHED' && (
+                      {/* Complete button - shown only for DISPATCHED trips and DRIVER */}
+                      {trip.status === 'DISPATCHED' && userRole === 'DRIVER' && (
                         <button
                           onClick={() => handleCompleteClick(trip.id)}
                           title="Complete Trip"
@@ -249,8 +249,8 @@ const TripTable = ({ trips = [], onDispatch, onComplete, onCancel, userRole }) =
                         </button>
                       )}
 
-                      {/* Cancel button - shown only for DISPATCHED trips */}
-                      {trip.status === 'DISPATCHED' && (
+                      {/* Cancel button - shown only for DISPATCHED trips and FLEET_MANAGER */}
+                      {trip.status === 'DISPATCHED' && userRole === 'FLEET_MANAGER' && (
                         <button
                           onClick={() => handleCancelClick(trip.id)}
                           title="Cancel Trip"

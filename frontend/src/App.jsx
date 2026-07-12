@@ -6,6 +6,10 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import VehiclesPage from './pages/VehiclesPage';
 import DriversPage from './pages/DriversPage';
+import TripsPage from './pages/TripsPage';
+import MaintenancePage from './pages/MaintenancePage';
+import FuelExpensePage from './pages/FuelExpensePage';
+import ReportsPage from './pages/ReportsPage';
 
 // ProtectedRoute Guard Component
 const ProtectedRoute = ({ children }) => {
@@ -70,6 +74,38 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <DriversPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/trips"
+            element={
+              <ProtectedRoute>
+                <TripsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/maintenance"
+            element={
+              <ProtectedRoute>
+                <MaintenancePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/fuel-expense"
+            element={
+              <ProtectedRoute>
+                <FuelExpensePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <ReportsPage />
               </ProtectedRoute>
             }
           />

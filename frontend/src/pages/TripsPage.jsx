@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 
 const TripsPage = () => {
   const { role } = useAuth();
-  const isDriver = role === 'DRIVER';
+  const isFleetManager = role === 'FLEET_MANAGER';
 
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -163,7 +163,7 @@ const TripsPage = () => {
             <h1 className="page-title">Trip Management</h1>
             <p className="page-subtitle">Create, dispatch, and track trip assignments across the fleet</p>
           </div>
-          {isDriver && (
+          {isFleetManager && (
             <button
               onClick={handleShowForm}
               style={{
@@ -195,8 +195,8 @@ const TripsPage = () => {
           </div>
         )}
 
-        {/* Create Trip Form (Inline, shown for DRIVER) */}
-        {showForm && (
+        {/* Create Trip Form (Inline, shown for FLEET_MANAGER) */}
+        {showForm && isFleetManager && (
           <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
             <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '600' }}>Create New Trip</h3>
             <form onSubmit={handleFormSubmit}>
