@@ -5,6 +5,9 @@ const { authenticate } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/rbac.middleware');
 const { validateTripCreation } = require('../validators/trip.validator');
 
+// GET / -> any authenticated user can view trips
+router.get('/', authenticate, tripController.getTrips);
+
 // POST / -> create a new trip (DRIVER only)
 router.post('/', authenticate, authorize(['DRIVER']), validateTripCreation, tripController.createTrip);
 

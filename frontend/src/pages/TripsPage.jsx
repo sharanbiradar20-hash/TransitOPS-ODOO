@@ -1,12 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import {
-  getAvailableVehicles,
-  getAvailableDrivers,
-  createTrip
-} from '../services/trip.service';
+import React, { useState, useEffect, useCallback } from 'react';
+import Sidebar from '../components/common/Sidebar';
+import TripTable from '../components/trips/TripTable';
+import tripService from '../services/trip.service';
+import { useAuth } from '../context/AuthContext';
 
 const TripsPage = () => {
-  // Form state
+  const { role } = useAuth();
+  const isDriver = role === 'DRIVER';
+
+  const [trips, setTrips] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState('');
+
+  // Create form state
+  const [showForm, setShowForm] = useState(false);
+  const [vehicles, setVehicles] = useState([]);
+  const [drivers, setDrivers] = useState([]);
   const [formData, setFormData] = useState({
     source: '',
     destination: '',
@@ -15,276 +28,319 @@ const TripsPage = () => {
     cargoWeight: '',
     plannedDistance: ''
   });
+  const [formLoading, setFormLoading] = useState(false);
 
-  // Dropdown options
-  const [vehicles, setVehicles] = useState([]);
-  const [drivers, setDrivers] = useState([]);
-
-  // UI state
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
-  // Fetch available vehicles and drivers on mount
-  useEffect(() => {
-    fetchDropdownData();
-  }, []);
-
-  const fetchDropdownData = async () => {
+  const loadTrips = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const [vehiclesRes, driversRes] = await Promise.all([
-        getAvailableVehicles(),
-        getAvailableDrivers()
-      ]);
-      setVehicles(vehiclesRes.data);
-      setDrivers(driversRes.data);
+      const params = {};
+      if (statusFilter) params.status = statusFilter;
+      const data = await tripService.getTrips(params);
+      setTrips(data);
     } catch (err) {
-      setError('Failed to load vehicles/drivers. Please try again.');
+      console.error('Error fetching trips:', err);
+      setError('Could not load trips. Please check authorization or server status.');
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter]);
+
+  useEffect(() => {
+    loadTrips();
+  }, [loadTrips]);
+
+  const loadDropdownData = async () => {
+    try {
+      const [vehiclesData, driversData] = await Promise.all([
+        tripService.getAvailableVehicles(),
+        tripService.getAvailableDrivers()
+      ]);
+      setVehicles(vehiclesData);
+      setDrivers(driversData);
+    } catch (err) {
+      setError('Failed to load available vehicles/drivers.');
     }
   };
 
-  // Handle input changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
-    if (error) setError('');
+  const handleShowForm = () => {
+    setShowForm(true);
+    loadDropdownData();
   };
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (error) setError(null);
+  };
 
-    // Client-side required field check
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
     const { source, destination, vehicleId, driverId, cargoWeight, plannedDistance } = formData;
     if (!source || !destination || !vehicleId || !driverId || !cargoWeight || !plannedDistance) {
       setError('All fields are required.');
       return;
     }
 
-    setLoading(true);
+    setFormLoading(true);
     try {
-      const payload = {
+      await tripService.createTrip({
         source,
         destination,
         vehicleId: Number(vehicleId),
         driverId: Number(driverId),
         cargoWeight: Number(cargoWeight),
         plannedDistance: Number(plannedDistance)
-      };
-
-      await createTrip(payload);
-      setSuccess('Trip created successfully!');
-      setFormData({
-        source: '',
-        destination: '',
-        vehicleId: '',
-        driverId: '',
-        cargoWeight: '',
-        plannedDistance: ''
       });
-      // Refresh dropdown data (vehicle/driver may no longer be available)
-      fetchDropdownData();
+      setSuccess('Trip created successfully!');
+      setFormData({ source: '', destination: '', vehicleId: '', driverId: '', cargoWeight: '', plannedDistance: '' });
+      setShowForm(false);
+      loadTrips();
     } catch (err) {
-      // Display specific backend error message inline
-      if (err.response && err.response.data && err.response.data.error) {
-        setError(err.response.data.error);
-      } else {
-        setError('An unexpected error occurred. Please try again.');
-      }
+      const msg = err.response?.data?.error || 'Failed to create trip.';
+      setError(msg);
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
 
+  const handleDispatch = async (tripId) => {
+    setError(null);
+    setSuccess(null);
+    try {
+      await tripService.dispatchTrip(tripId);
+      setSuccess(`Trip #${tripId} dispatched successfully.`);
+      loadTrips();
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Failed to dispatch trip.';
+      setError(msg);
+    }
+  };
+
+  const handleComplete = async (tripId, data) => {
+    setError(null);
+    setSuccess(null);
+    try {
+      await tripService.completeTrip(tripId, data);
+      setSuccess(`Trip #${tripId} marked as completed.`);
+      loadTrips();
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Failed to complete trip.';
+      setError(msg);
+    }
+  };
+
+  const handleCancel = async (tripId) => {
+    setError(null);
+    setSuccess(null);
+    try {
+      await tripService.cancelTrip(tripId);
+      setSuccess(`Trip #${tripId} has been cancelled.`);
+      loadTrips();
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Failed to cancel trip.';
+      setError(msg);
+    }
+  };
+
+  const statusOptions = [
+    { value: '', label: 'All Statuses' },
+    { value: 'DRAFT', label: 'Draft' },
+    { value: 'DISPATCHED', label: 'Dispatched' },
+    { value: 'COMPLETED', label: 'Completed' },
+    { value: 'CANCELLED', label: 'Cancelled' }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Create New Trip</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Fill in the details below to create a new trip assignment.
-          </p>
+    <div className="app-layout">
+      <Sidebar />
+      <main className="main-content">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Trip Management</h1>
+            <p className="page-subtitle">Create, dispatch, and track trip assignments across the fleet</p>
+          </div>
+          {isDriver && (
+            <button
+              onClick={handleShowForm}
+              style={{
+                padding: '0.6rem 1.2rem', border: 'none', borderRadius: '6px',
+                background: 'var(--accent-color)', color: 'white', cursor: 'pointer',
+                fontSize: '0.85rem', fontWeight: '600'
+              }}
+            >
+              + New Trip
+            </button>
+          )}
         </div>
 
-        {/* Error Message */}
+        {/* Error Banner */}
         {error && (
-          <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-red-800">{error}</p>
-              </div>
-            </div>
+          <div className="auth-error" style={{ marginBottom: '1.5rem' }}>
+            {error}
           </div>
         )}
 
-        {/* Success Message */}
+        {/* Success Banner */}
         {success && (
-          <div className="mb-4 rounded-md bg-green-50 border border-green-200 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-green-800">{success}</p>
-              </div>
-            </div>
+          <div style={{
+            marginBottom: '1.5rem', padding: '0.75rem 1rem', borderRadius: '6px',
+            background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534',
+            fontSize: '0.85rem', fontWeight: '500'
+          }}>
+            {success}
           </div>
         )}
 
-        {/* Trip Creation Form */}
-        <form onSubmit={handleSubmit} className="bg-white shadow-sm rounded-lg border border-gray-200 p-6 space-y-6">
-          {/* Source & Destination */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-              <label htmlFor="source" className="block text-sm font-medium text-gray-700">
-                Source
-              </label>
-              <input
-                type="text"
-                id="source"
-                name="source"
-                value={formData.source}
-                onChange={handleChange}
-                placeholder="e.g., Bangalore"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="destination" className="block text-sm font-medium text-gray-700">
-                Destination
-              </label>
-              <input
-                type="text"
-                id="destination"
-                name="destination"
-                value={formData.destination}
-                onChange={handleChange}
-                placeholder="e.g., Chennai"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
+        {/* Create Trip Form (Inline, shown for DRIVER) */}
+        {showForm && (
+          <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '600' }}>Create New Trip</h3>
+            <form onSubmit={handleFormSubmit}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label className="form-label">Source</label>
+                  <input
+                    type="text"
+                    name="source"
+                    className="form-input"
+                    value={formData.source}
+                    onChange={handleFormChange}
+                    placeholder="e.g., Bangalore"
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Destination</label>
+                  <input
+                    type="text"
+                    name="destination"
+                    className="form-input"
+                    value={formData.destination}
+                    onChange={handleFormChange}
+                    placeholder="e.g., Chennai"
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Vehicle</label>
+                  <select name="vehicleId" className="form-input" value={formData.vehicleId} onChange={handleFormChange}>
+                    <option value="">Select vehicle</option>
+                    {vehicles.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.regNumber} — {v.nameModel} (Max: {v.maxLoadCapacity}kg)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label">Driver</label>
+                  <select name="driverId" className="form-input" value={formData.driverId} onChange={handleFormChange}>
+                    <option value="">Select driver</option>
+                    {drivers.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} — {d.licenseCategory}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label">Cargo Weight (kg)</label>
+                  <input
+                    type="number"
+                    name="cargoWeight"
+                    className="form-input"
+                    value={formData.cargoWeight}
+                    onChange={handleFormChange}
+                    placeholder="e.g., 500"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Planned Distance (km)</label>
+                  <input
+                    type="number"
+                    name="plannedDistance"
+                    className="form-input"
+                    value={formData.plannedDistance}
+                    onChange={handleFormChange}
+                    placeholder="e.g., 350"
+                    min="0"
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  style={{
+                    padding: '0.5rem 1rem', border: '1px solid var(--border-color)',
+                    borderRadius: '6px', background: 'white', cursor: 'pointer',
+                    fontSize: '0.85rem', fontWeight: '500'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={formLoading}
+                  style={{
+                    padding: '0.5rem 1rem', border: 'none', borderRadius: '6px',
+                    background: 'var(--accent-color)', color: 'white', cursor: 'pointer',
+                    fontSize: '0.85rem', fontWeight: '500',
+                    opacity: formLoading ? 0.6 : 1
+                  }}
+                >
+                  {formLoading ? 'Creating...' : 'Create Trip'}
+                </button>
+              </div>
+            </form>
           </div>
+        )}
 
-          {/* Vehicle & Driver Dropdowns */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-              <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-700">
-                Vehicle
-              </label>
+        {/* Filters */}
+        <div className="card" style={{ padding: '1.25rem 1.5rem', marginBottom: '1.5rem' }}>
+          <div className="table-controls">
+            <div className="filter-group">
               <select
-                id="vehicleId"
-                name="vehicleId"
-                value={formData.vehicleId}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="form-input"
+                style={{ width: '150px', padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
               >
-                <option value="">Select a vehicle</option>
-                {vehicles.map((vehicle) => (
-                  <option key={vehicle.id} value={vehicle.id}>
-                    {vehicle.regNumber} — {vehicle.nameModel} (Max: {vehicle.maxLoadCapacity}kg)
+                {statusOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
                   </option>
                 ))}
               </select>
-              {vehicles.length === 0 && (
-                <p className="mt-1 text-xs text-amber-600">No available vehicles found.</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="driverId" className="block text-sm font-medium text-gray-700">
-                Driver
-              </label>
-              <select
-                id="driverId"
-                name="driverId"
-                value={formData.driverId}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              >
-                <option value="">Select a driver</option>
-                {drivers.map((driver) => (
-                  <option key={driver.id} value={driver.id}>
-                    {driver.name} — {driver.licenseCategory} (License: {driver.licenseNumber})
-                  </option>
-                ))}
-              </select>
-              {drivers.length === 0 && (
-                <p className="mt-1 text-xs text-amber-600">No available drivers found.</p>
-              )}
             </div>
           </div>
 
-          {/* Cargo Weight & Planned Distance */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-              <label htmlFor="cargoWeight" className="block text-sm font-medium text-gray-700">
-                Cargo Weight (kg)
-              </label>
-              <input
-                type="number"
-                id="cargoWeight"
-                name="cargoWeight"
-                value={formData.cargoWeight}
-                onChange={handleChange}
-                placeholder="e.g., 500"
-                min="0"
-                step="0.01"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              />
+          {/* Trip Table */}
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '3rem' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                border: '3px solid var(--border-color)',
+                borderTopColor: 'var(--accent-color)',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
             </div>
-
-            <div>
-              <label htmlFor="plannedDistance" className="block text-sm font-medium text-gray-700">
-                Planned Distance (km)
-              </label>
-              <input
-                type="number"
-                id="plannedDistance"
-                name="plannedDistance"
-                value={formData.plannedDistance}
-                onChange={handleChange}
-                placeholder="e.g., 350"
-                min="0"
-                step="0.01"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Creating...
-                </>
-              ) : (
-                'Create Trip'
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+          ) : (
+            <TripTable
+              trips={trips}
+              onDispatch={handleDispatch}
+              onComplete={handleComplete}
+              onCancel={handleCancel}
+              userRole={role}
+            />
+          )}
+        </div>
+      </main>
     </div>
   );
 };

@@ -1,6 +1,30 @@
 const prisma = require('../config/db');
 const { updateVehicleStatus, updateDriverStatus } = require('../utils/statusTransition');
 
+// Get all trips, optionally filtered by status
+const getTrips = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const where = {};
+    if (status) {
+      where.status = status;
+    }
+
+    const trips = await prisma.trip.findMany({
+      where,
+      include: {
+        vehicle: { select: { id: true, regNumber: true, nameModel: true } },
+        driver: { select: { id: true, name: true, licenseNumber: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.status(200).json(trips);
+  } catch (error) {
+    console.error('Error fetching trips:', error);
+    return res.status(500).json({ error: 'Internal server error fetching trips.' });
+  }
+};
+
 // Create a new trip
 const createTrip = async (req, res) => {
   try {
@@ -141,6 +165,7 @@ const cancelTrip = async (req, res) => {
 };
 
 module.exports = {
+  getTrips,
   createTrip,
   dispatchTrip,
   completeTrip,
