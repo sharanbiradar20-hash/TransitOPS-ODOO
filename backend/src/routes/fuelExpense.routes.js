@@ -4,8 +4,8 @@ const fuelExpenseController = require('../controllers/fuelExpense.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/rbac.middleware');
 
-// GET / -> any authenticated user can view fuel logs
-router.get('/', authenticate, fuelExpenseController.getFuelLogs);
+// GET / -> FLEET_MANAGER, FINANCIAL_ANALYST, or SAFETY_OFFICER can view fuel logs
+router.get('/', authenticate, authorize(['FLEET_MANAGER', 'FINANCIAL_ANALYST', 'SAFETY_OFFICER']), fuelExpenseController.getFuelLogs);
 
 // POST / -> create a fuel log (FLEET_MANAGER or DRIVER)
 router.post('/', authenticate, authorize(['FLEET_MANAGER', 'DRIVER']), fuelExpenseController.createFuelLog);
