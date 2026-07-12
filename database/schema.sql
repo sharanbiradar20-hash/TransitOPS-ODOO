@@ -1,0 +1,33 @@
+CREATE DATABASE IF NOT EXISTS transitops;
+USE transitops;
+
+CREATE TABLE users (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100),
+  email VARCHAR(150) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('FLEET_MANAGER','DRIVER','SAFETY_OFFICER','FINANCIAL_ANALYST') NOT NULL
+);
+
+CREATE TABLE vehicles (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  reg_number VARCHAR(30) UNIQUE NOT NULL,
+  name_model VARCHAR(100),
+  type VARCHAR(50),
+  max_load_capacity DECIMAL(10,2) NOT NULL,
+  odometer DECIMAL(10,2) DEFAULT 0,
+  acquisition_cost DECIMAL(12,2),
+  status ENUM('AVAILABLE','ON_TRIP','IN_SHOP','RETIRED') DEFAULT 'AVAILABLE',
+  region VARCHAR(50)
+);
+
+CREATE TABLE drivers (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100),
+  license_number VARCHAR(50) UNIQUE,
+  license_category VARCHAR(20),
+  license_expiry DATE,
+  contact_number VARCHAR(20),
+  safety_score DECIMAL(4,1) DEFAULT 100,
+  status ENUM('AVAILABLE','ON_TRIP','OFF_DUTY','SUSPENDED') DEFAULT 'AVAILABLE'
+);
