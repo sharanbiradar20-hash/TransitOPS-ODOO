@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  FLEET_MANAGER
+  DRIVER
+  SAFETY_OFFICER
+  FINANCIAL_ANALYST
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  ON_TRIP
+  IN_SHOP
+  RETIRED
+}
+
+enum DriverStatus {
+  AVAILABLE
+  ON_TRIP
+  OFF_DUTY
+  SUSPENDED
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String @unique
+  password String
+  role     Role
+
+  @@map("users")
+}
+
+model Vehicle {
+  id              Int           @id @default(autoincrement())
+  regNumber       String        @unique @map("reg_number")
+  nameModel       String        @map("name_model")
+  type            String
+  maxLoadCapacity Decimal       @map("max_load_capacity")
+  odometer        Decimal       @default(0)
+  acquisitionCost Decimal       @map("acquisition_cost")
+  status          VehicleStatus @default(AVAILABLE)
+  region          String
+
+  @@map("vehicles")
+}
+
+model Driver {
+  id              Int          @id @default(autoincrement())
+  name            String
+  licenseNumber   String       @unique @map("license_number")
+  licenseCategory String       @map("license_category")
+  licenseExpiry   DateTime     @map("license_expiry")
+  contactNumber   String       @map("contact_number")
+  safetyScore     Decimal      @default(100) @map("safety_score")
+  status          DriverStatus @default(AVAILABLE)
+
+  @@map("drivers")
+}
