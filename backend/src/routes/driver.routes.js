@@ -4,6 +4,9 @@ const driverController = require('../controllers/driver.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/rbac.middleware');
 
+// GET /available -> get only available drivers with valid license
+router.get('/available', authenticate, driverController.getAvailableDrivers);
+
 // GET / -> any authenticated user can view
 router.get('/', authenticate, driverController.getDrivers);
 

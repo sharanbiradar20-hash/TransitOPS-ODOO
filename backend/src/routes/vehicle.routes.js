@@ -4,6 +4,9 @@ const vehicleController = require('../controllers/vehicle.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/rbac.middleware');
 
+// GET /available -> get only available vehicles
+router.get('/available', authenticate, vehicleController.getAvailableVehicles);
+
 // GET / -> any authenticated user can view
 router.get('/', authenticate, vehicleController.getVehicles);
 

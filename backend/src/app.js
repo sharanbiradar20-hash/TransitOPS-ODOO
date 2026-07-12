@@ -5,6 +5,7 @@ const authRoutes = require('./routes/auth.routes');
 const vehicleRoutes = require('./routes/vehicle.routes');
 const driverRoutes = require('./routes/driver.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const tripRoutes = require('./routes/trip.routes');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/trips', tripRoutes);
 
 // Catch-all route for non-existent endpoints
 app.use((req, res) => {
