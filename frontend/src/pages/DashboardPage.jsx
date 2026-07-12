@@ -17,55 +17,64 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchKpis = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const fetchKpis = useCallback(async (showLoadingState = true) => {
+    if (showLoadingState) {
+      setLoading(true);
+      setError(null);
+    }
     try {
-      const data = await dashboardService.getKpis();
+      const params = {};
+      if (region) {
+        params.region = region;
+      }
+      const data = await dashboardService.getKpis(params);
       
-      // If we selected a region, let's simulate client-side region filter or let it stand.
-      // (The endpoint doesn't strictly take query filters in specification, but we hold region in state)
-      // Let's store the results.
+      // Calculate active vehicles (ON_TRIP) from total vehicles and utilization percentage
+      // since the backend returns totalVehicles and fleetUtilization instead of activeVehicles.
+      const activeVehicles = Math.round((data.fleetUtilization * data.totalVehicles) / 100) || 0;
+
       setKpis({
-        activeVehicles: data.activeVehicles || 0,
+        activeVehicles: activeVehicles,
         availableVehicles: data.availableVehicles || 0,
-        vehiclesInMaintenance: data.vehiclesInMaintenance || 0,
+        vehiclesInMaintenance: data.maintenanceVehicles || 0,
         driversOnDuty: data.driversOnDuty || 0,
         fleetUtilization: data.fleetUtilization || 0,
       });
     } catch (err) {
       console.error('Failed to load KPIs:', err);
-      setError('Failed to fetch dashboard metrics. Please check the backend connection.');
+      if (showLoadingState) {
+        setError('Failed to fetch dashboard metrics. Please check the backend connection.');
+      }
     } finally {
-      setLoading(false);
+      if (showLoadingState) {
+        setLoading(false);
+      }
     }
-  }, []);
+  }, [region]);
 
   useEffect(() => {
-    fetchKpis();
+    // Initial fetch on mount with loading spinner
+    fetchKpis(true);
+
+    // Setup 5-second polling loop for background updates
+    const intervalId = setInterval(() => {
+      fetchKpis(false);
+    }, 5000);
+
+    // Cleanup interval on component unmount
+    return () => {
+      clearInterval(intervalId);
+    };
   }, [fetchKpis]);
 
   const handleRefresh = () => {
-    fetchKpis();
+    fetchKpis(true);
   };
 
   const handleRegionChange = (selectedReg) => {
     setRegion(selectedReg);
-    // Since region filters are supported on vehicles/drivers, in a real scenario we'd call specific queries.
-    // For mockup filters on dashboard, we simulate a slight shift in stats for client demonstration.
-    if (selectedReg) {
-      // Simulate region specific metrics
-      const hash = selectedReg.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      setKpis({
-        activeVehicles: Math.max(1, hash % 8),
-        availableVehicles: Math.max(1, (hash * 3) % 12),
-        vehiclesInMaintenance: hash % 3,
-        driversOnDuty: Math.max(1, (hash * 2) % 10),
-        fleetUtilization: Math.max(40, (hash * 7) % 100),
-      });
-    } else {
-      fetchKpis();
-    }
+    // Note: The backend's /api/dashboard/kpis endpoint does not currently support query filters or region parameters.
+    // The dropdown serves as a visual layout placeholder for future backend expansion.
   };
 
   // SVGs for KPIs

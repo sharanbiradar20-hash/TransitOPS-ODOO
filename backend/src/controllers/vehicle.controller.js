@@ -24,6 +24,29 @@ const getVehicles = async (req, res) => {
   }
 };
 
+// Get distinct vehicle regions
+const getRegions = async (req, res) => {
+  try {
+    const vehicles = await prisma.vehicle.findMany({
+      select: {
+        region: true
+      }
+    });
+    
+    // Get unique, non-null, non-blank values
+    const distinctRegions = [...new Set(
+      vehicles
+        .map(v => v.region)
+        .filter(r => r !== null && r !== undefined && String(r).trim() !== '')
+    )];
+
+    return res.status(200).json(distinctRegions);
+  } catch (error) {
+    console.error('Error fetching distinct regions:', error);
+    return res.status(500).json({ error: 'Internal server error fetching distinct regions.' });
+  }
+};
+
 // Create a new vehicle
 const createVehicle = async (req, res) => {
   try {
@@ -142,6 +165,7 @@ const deleteVehicle = async (req, res) => {
 
 module.exports = {
   getVehicles,
+  getRegions,
   createVehicle,
   updateVehicle,
   deleteVehicle

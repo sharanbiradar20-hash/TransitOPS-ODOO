@@ -1,14 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
+import vehicleService from '../../services/vehicle.service';
 
 const DashboardFilters = ({ selectedRegion, onRegionChange, onRefresh, loading }) => {
-  const regions = [
-    { value: '', label: 'All Regions' },
-    { value: 'North', label: 'North Region' },
-    { value: 'South', label: 'South Region' },
-    { value: 'East', label: 'East Region' },
-    { value: 'West', label: 'West Region' }
-  ];
+  const [regions, setRegions] = useState([{ value: '', label: 'All Regions' }]);
+
+  useEffect(() => {
+    const loadRegions = async () => {
+      try {
+        const data = await vehicleService.getRegions();
+        setRegions([
+          { value: '', label: 'All Regions' },
+          ...data.map((r) => ({ value: r, label: r }))
+        ]);
+      } catch (err) {
+        console.error('Failed to load regions filter options:', err);
+      }
+    };
+    loadRegions();
+  }, [loading]);
 
   return (
     <div className="card" style={{ padding: '1rem 1.5rem', marginBottom: '1.5rem' }}>

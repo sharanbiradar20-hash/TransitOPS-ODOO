@@ -7,6 +7,9 @@ const { authorize } = require('../middleware/rbac.middleware');
 // GET / -> any authenticated user can view
 router.get('/', authenticate, vehicleController.getVehicles);
 
+// GET /regions -> any authenticated user can view
+router.get('/regions', authenticate, vehicleController.getRegions);
+
 // POST, PUT, DELETE -> restricted to FLEET_MANAGER role only
 router.post('/', authenticate, authorize(['FLEET_MANAGER']), vehicleController.createVehicle);
 router.put('/:id', authenticate, authorize(['FLEET_MANAGER']), vehicleController.updateVehicle);

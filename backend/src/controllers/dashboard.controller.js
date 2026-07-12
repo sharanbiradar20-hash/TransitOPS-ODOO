@@ -3,6 +3,12 @@ const prisma = require('../config/db');
 // Get all dashboard KPIs
 const getKpis = async (req, res) => {
   try {
+    const { region } = req.query;
+    const vehicleWhere = {};
+    if (region) {
+      vehicleWhere.region = region;
+    }
+
     // Run counting queries concurrently for optimization
     const [
       totalVehicles,
@@ -11,10 +17,10 @@ const getKpis = async (req, res) => {
       onTripVehicles,
       driversOnDuty
     ] = await Promise.all([
-      prisma.vehicle.count(),
-      prisma.vehicle.count({ where: { status: 'AVAILABLE' } }),
-      prisma.vehicle.count({ where: { status: 'IN_SHOP' } }),
-      prisma.vehicle.count({ where: { status: 'ON_TRIP' } }),
+      prisma.vehicle.count({ where: vehicleWhere }),
+      prisma.vehicle.count({ where: { ...vehicleWhere, status: 'AVAILABLE' } }),
+      prisma.vehicle.count({ where: { ...vehicleWhere, status: 'IN_SHOP' } }),
+      prisma.vehicle.count({ where: { ...vehicleWhere, status: 'ON_TRIP' } }),
       prisma.driver.count({ where: { status: 'ON_TRIP' } })
     ]);
 

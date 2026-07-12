@@ -1,7 +1,7 @@
 import API from './api';
 
-const getKpis = async () => {
-  const response = await API.get('/dashboard/kpis');
+const getKpis = async (params = {}) => {
+  const response = await API.get('/dashboard/kpis', { params });
   return response.data; // Expected: { activeVehicles, availableVehicles, vehiclesInMaintenance, driversOnDuty, fleetUtilization }
 };
 

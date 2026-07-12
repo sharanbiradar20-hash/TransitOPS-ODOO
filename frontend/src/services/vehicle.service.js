@@ -20,8 +20,14 @@ const deleteVehicle = async (id) => {
   return response.data;
 };
 
+const getRegions = async () => {
+  const response = await API.get('/vehicles/regions');
+  return response.data;
+};
+
 const vehicleService = {
   getVehicles,
+  getRegions,
   createVehicle,
   updateVehicle,
   deleteVehicle,

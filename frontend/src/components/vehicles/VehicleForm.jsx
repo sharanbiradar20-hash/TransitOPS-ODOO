@@ -10,11 +10,14 @@ const VehicleForm = ({ onSubmit, editingVehicle, onCancel }) => {
     maxLoadCapacity: '',
     odometer: '',
     acquisitionCost: '',
-    region: '',
     status: 'AVAILABLE'
   });
 
+  const [regionType, setRegionType] = useState('North');
+  const [customRegion, setCustomRegion] = useState('');
   const [errors, setErrors] = useState({});
+
+  const fixedRegions = ['North', 'South', 'East', 'West', 'Central', 'Northeast'];
 
   useEffect(() => {
     if (editingVehicle) {
@@ -25,9 +28,16 @@ const VehicleForm = ({ onSubmit, editingVehicle, onCancel }) => {
         maxLoadCapacity: editingVehicle.maxLoadCapacity || '',
         odometer: editingVehicle.odometer || '',
         acquisitionCost: editingVehicle.acquisitionCost || '',
-        region: editingVehicle.region || '',
         status: editingVehicle.status || 'AVAILABLE'
       });
+      const r = editingVehicle.region || '';
+      if (fixedRegions.includes(r)) {
+        setRegionType(r);
+        setCustomRegion('');
+      } else {
+        setRegionType(r ? 'Custom' : 'North');
+        setCustomRegion(r);
+      }
     } else {
       setFormData({
         regNumber: '',
@@ -36,9 +46,10 @@ const VehicleForm = ({ onSubmit, editingVehicle, onCancel }) => {
         maxLoadCapacity: '',
         odometer: '',
         acquisitionCost: '',
-        region: '',
         status: 'AVAILABLE'
       });
+      setRegionType('North');
+      setCustomRegion('');
     }
     setErrors({});
   }, [editingVehicle]);
@@ -59,6 +70,22 @@ const VehicleForm = ({ onSubmit, editingVehicle, onCancel }) => {
     }
   };
 
+  const handleRegionTypeChange = (e) => {
+    const val = e.target.value;
+    setRegionType(val);
+    if (errors.region) {
+      setErrors((prev) => ({ ...prev, region: '' }));
+    }
+  };
+
+  const handleCustomRegionChange = (e) => {
+    const val = e.target.value;
+    setCustomRegion(val);
+    if (errors.region) {
+      setErrors((prev) => ({ ...prev, region: '' }));
+    }
+  };
+
   const validate = () => {
     const tempErrors = {};
     if (!formData.regNumber || String(formData.regNumber).trim() === '') {
@@ -67,7 +94,9 @@ const VehicleForm = ({ onSubmit, editingVehicle, onCancel }) => {
     if (!formData.nameModel || String(formData.nameModel).trim() === '') {
       tempErrors.nameModel = 'Name/Model is required';
     }
-    if (!formData.region || String(formData.region).trim() === '') {
+    
+    const activeRegion = regionType === 'Custom' ? customRegion : regionType;
+    if (!activeRegion || String(activeRegion).trim() === '') {
       tempErrors.region = 'Region is required';
     }
     
@@ -96,7 +125,11 @@ const VehicleForm = ({ onSubmit, editingVehicle, onCancel }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
-      onSubmit(formData);
+      const activeRegion = regionType === 'Custom' ? customRegion : regionType;
+      onSubmit({
+        ...formData,
+        region: activeRegion
+      });
     }
   };
 
@@ -105,6 +138,16 @@ const VehicleForm = ({ onSubmit, editingVehicle, onCancel }) => {
     { value: 'VAN', label: 'Van' },
     { value: 'CAR', label: 'Car' },
     { value: 'TRAILER', label: 'Trailer' }
+  ];
+
+  const regionOptions = [
+    { value: 'North', label: 'North' },
+    { value: 'South', label: 'South' },
+    { value: 'East', label: 'East' },
+    { value: 'West', label: 'West' },
+    { value: 'Central', label: 'Central' },
+    { value: 'Northeast', label: 'Northeast' },
+    { value: 'Custom', label: 'Custom' }
   ];
 
   const vehicleStatuses = [
@@ -151,15 +194,29 @@ const VehicleForm = ({ onSubmit, editingVehicle, onCancel }) => {
             required
           />
 
-          <InputField
-            label="Region"
-            name="region"
-            value={formData.region}
-            onChange={handleChange}
-            placeholder="e.g. North-East"
-            error={errors.region}
-            required
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+            <InputField
+              label="Region"
+              type="select"
+              name="regionType"
+              value={regionType}
+              onChange={handleRegionTypeChange}
+              options={regionOptions}
+              error={regionType !== 'Custom' ? errors.region : null}
+              required
+            />
+            {regionType === 'Custom' && (
+              <InputField
+                label="Custom Region Name"
+                name="customRegion"
+                value={customRegion}
+                onChange={handleCustomRegionChange}
+                placeholder="Enter custom region name"
+                error={errors.region}
+                required
+              />
+            )}
+          </div>
         </div>
 
         <div className="form-row">
