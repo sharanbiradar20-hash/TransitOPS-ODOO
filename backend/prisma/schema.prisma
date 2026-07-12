@@ -35,6 +35,12 @@ enum TripStatus {
   CANCELLED
 }
 
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
 model User {
   id       Int    @id @default(autoincrement())
   name     String
@@ -46,16 +52,19 @@ model User {
 }
 
 model Vehicle {
-  id              Int           @id @default(autoincrement())
-  regNumber       String        @unique @map("reg_number")
-  nameModel       String        @map("name_model")
+  id              Int              @id @default(autoincrement())
+  regNumber       String           @unique @map("reg_number")
+  nameModel       String           @map("name_model")
   type            String
-  maxLoadCapacity Decimal       @map("max_load_capacity")
-  odometer        Decimal       @default(0)
-  acquisitionCost Decimal       @map("acquisition_cost")
-  status          VehicleStatus @default(AVAILABLE)
+  maxLoadCapacity Decimal          @map("max_load_capacity")
+  odometer        Decimal          @default(0)
+  acquisitionCost Decimal          @map("acquisition_cost")
+  status          VehicleStatus    @default(AVAILABLE)
   region          String
   trips           Trip[]
+  maintenanceLogs MaintenanceLog[]
+  fuelLogs        FuelLog[]
+  expenses        Expense[]
 
   @@map("vehicles")
 }
@@ -92,4 +101,41 @@ model Trip {
   driver          Driver     @relation(fields: [driverId], references: [id])
 
   @@map("trips")
+}
+
+model MaintenanceLog {
+  id               Int               @id @default(autoincrement())
+  vehicleId        Int               @map("vehicle_id")
+  issueDescription String            @map("issue_description")
+  status           MaintenanceStatus @default(OPEN)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  closedAt         DateTime?         @map("closed_at")
+
+  vehicle          Vehicle           @relation(fields: [vehicleId], references: [id])
+
+  @@map("maintenance_logs")
+}
+
+model FuelLog {
+  id        Int      @id @default(autoincrement())
+  vehicleId Int      @map("vehicle_id")
+  liters    Decimal
+  cost      Decimal
+  date      DateTime
+
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id])
+
+  @@map("fuel_logs")
+}
+
+model Expense {
+  id        Int      @id @default(autoincrement())
+  vehicleId Int      @map("vehicle_id")
+  type      String
+  amount    Decimal
+  date      DateTime
+
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id])
+
+  @@map("expenses")
 }
