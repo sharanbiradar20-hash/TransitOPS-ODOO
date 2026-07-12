@@ -178,6 +178,8 @@ const deleteVehicle = async (req, res) => {
 
 module.exports = {
   getVehicles,
+  getRegions,
+  getAvailableVehicles,
   createVehicle,
   updateVehicle,
   deleteVehicle
