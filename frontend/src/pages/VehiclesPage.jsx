@@ -21,8 +21,26 @@ const VehiclesPage = () => {
     region: '',
   });
 
+  const [regionOptions, setRegionOptions] = useState([{ value: '', label: 'All Regions' }]);
+
   // Client-side text search
   const [searchQuery, setSearchQuery] = useState('');
+
+  const loadRegions = useCallback(async () => {
+    try {
+      const data = await vehicleService.getRegions();
+      setRegionOptions([
+        { value: '', label: 'All Regions' },
+        ...data.map((r) => ({ value: r, label: r }))
+      ]);
+    } catch (err) {
+      console.error('Error fetching dynamic regions:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRegions();
+  }, [loadRegions]);
 
   const loadVehicles = useCallback(async () => {
     setLoading(true);
@@ -68,6 +86,7 @@ const VehiclesPage = () => {
         await vehicleService.createVehicle(formData);
       }
       loadVehicles();
+      loadRegions();
     } catch (err) {
       console.error('Error saving vehicle:', err);
       const msg = err.response?.data?.message || 'Failed to submit vehicle. Check input types and uniqueness.';
@@ -87,6 +106,7 @@ const VehiclesPage = () => {
         setError(null);
         await vehicleService.deleteVehicle(id);
         loadVehicles();
+        loadRegions();
         if (editingVehicle?.id === id) {
           setEditingVehicle(null);
         }
@@ -124,14 +144,6 @@ const VehiclesPage = () => {
     { value: 'ON_TRIP', label: 'On Trip' },
     { value: 'IN_SHOP', label: 'In Shop' },
     { value: 'RETIRED', label: 'Retired' }
-  ];
-
-  const regionOptions = [
-    { value: '', label: 'All Regions' },
-    { value: 'North', label: 'North' },
-    { value: 'South', label: 'South' },
-    { value: 'East', label: 'East' },
-    { value: 'West', label: 'West' }
   ];
 
   return (
