@@ -93,6 +93,7 @@ model Trip {
   plannedDistance  Decimal    @map("planned_distance")
   actualDistance   Decimal?   @map("actual_distance")
   fuelConsumed    Decimal?   @map("fuel_consumed")
+  revenue         Decimal?
   status          TripStatus @default(DRAFT)
   createdAt       DateTime   @default(now()) @map("created_at")
   updatedAt       DateTime   @updatedAt @map("updated_at")

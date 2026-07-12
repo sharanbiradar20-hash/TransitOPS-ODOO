@@ -8,6 +8,7 @@ const dashboardRoutes = require('./routes/dashboard.routes');
 const tripRoutes = require('./routes/trip.routes');
 const maintenanceRoutes = require('./routes/maintenance.routes');
 const fuelExpenseRoutes = require('./routes/fuelExpense.routes');
+const reportRoutes = require('./routes/report.routes');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/fuel-logs', fuelExpenseRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Catch-all route for non-existent endpoints
 app.use((req, res) => {
