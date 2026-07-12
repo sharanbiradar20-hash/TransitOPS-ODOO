@@ -1,8 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import StatusBadge from '../common/StatusBadge';
 
-const DriverTable = ({ drivers = [], onEdit, onDelete, userRole }) => {
+const DriverTable = ({ drivers = [], onEdit, onDelete, userRole, onUpdateScore }) => {
   const isAuthorized = userRole === 'FLEET_MANAGER' || userRole === 'SAFETY_OFFICER';
+  
+  const [editingScoreId, setEditingScoreId] = useState(null);
+  const [scoreValue, setScoreValue] = useState('');
+  const [scoreError, setScoreError] = useState('');
+
+  const handleSaveScore = (id) => {
+    const val = Number(scoreValue);
+    if (scoreValue === '' || isNaN(val) || val < 0 || val > 100) {
+      setScoreError('Must be 0-100');
+      return;
+    }
+    onUpdateScore(id, val);
+    setEditingScoreId(null);
+  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -70,6 +84,7 @@ const DriverTable = ({ drivers = [], onEdit, onDelete, userRole }) => {
             <th>Category</th>
             <th>Expiry Date</th>
             <th>Contact Number</th>
+            <th>Safety Score</th>
             <th>Status</th>
             {isAuthorized && <th style={{ textAlign: 'right' }}>Actions</th>}
           </tr>
@@ -109,11 +124,81 @@ const DriverTable = ({ drivers = [], onEdit, onDelete, userRole }) => {
                 </td>
                 <td>{d.contactNumber}</td>
                 <td>
+                  {editingScoreId === d.id ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <input
+                          type="number"
+                          value={scoreValue}
+                          onChange={(e) => {
+                            setScoreValue(e.target.value);
+                            setScoreError('');
+                          }}
+                          className="form-input"
+                          style={{ width: '70px', padding: '0.25rem 0.5rem', fontSize: '0.85rem', margin: 0 }}
+                          min="0"
+                          max="100"
+                          step="any"
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', minWidth: 'auto' }}
+                          onClick={() => handleSaveScore(d.id)}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', minWidth: 'auto' }}
+                          onClick={() => setEditingScoreId(null)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      {scoreError && (
+                        <span style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: '500' }}>
+                          {scoreError}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span style={{ fontWeight: '600', color: 'var(--text-secondary)' }}>
+                      {d.safetyScore !== undefined && d.safetyScore !== null ? d.safetyScore : 100}
+                    </span>
+                  )}
+                </td>
+                <td>
                   <StatusBadge status={d.status} />
                 </td>
                 {isAuthorized && (
                   <td>
                     <div className="table-actions" style={{ justifyContent: 'flex-end' }}>
+                      {userRole === 'SAFETY_OFFICER' && (
+                        <button
+                          className="btn-icon edit"
+                          type="button"
+                          onClick={() => {
+                            setEditingScoreId(d.id);
+                            setScoreValue(d.safetyScore !== undefined && d.safetyScore !== null ? d.safetyScore : 100);
+                            setScoreError('');
+                          }}
+                          title="Update Safety Score"
+                          style={{ borderColor: '#0d9488', color: '#0d9488', backgroundColor: '#f0fdf4' }}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                            stroke="currentColor"
+                            style={{ width: '1.1rem', height: '1.1rem' }}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                          </svg>
+                        </button>
+                      )}
                       <button
                         className="btn-icon edit"
                         onClick={() => onEdit(d)}

@@ -91,6 +91,17 @@ const DriversPage = () => {
     }
   };
 
+  const handleUpdateScore = async (id, newScore) => {
+    try {
+      setError(null);
+      await driverService.updateDriver(id, { safetyScore: newScore });
+      loadDrivers();
+    } catch (err) {
+      console.error('Error updating driver safety score:', err);
+      setError(err.response?.data?.message || 'Failed to update safety score.');
+    }
+  };
+
   const handleCancelEdit = () => {
     setEditingDriver(null);
   };
@@ -194,6 +205,7 @@ const DriversPage = () => {
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   userRole={role}
+                  onUpdateScore={handleUpdateScore}
                 />
               )}
             </div>
