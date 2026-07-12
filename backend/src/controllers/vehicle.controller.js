@@ -32,7 +32,7 @@ const getRegions = async (req, res) => {
         region: true
       }
     });
-    
+
     // Get unique, non-null, non-blank values
     const distinctRegions = [...new Set(
       vehicles
@@ -135,6 +135,19 @@ const updateVehicle = async (req, res) => {
   }
 };
 
+// Get available vehicles only
+const getAvailableVehicles = async (req, res) => {
+  try {
+    const vehicles = await prisma.vehicle.findMany({
+      where: { status: 'AVAILABLE' }
+    });
+    return res.status(200).json(vehicles);
+  } catch (error) {
+    console.error('Error fetching available vehicles:', error);
+    return res.status(500).json({ error: 'Internal server error fetching available vehicles.' });
+  }
+};
+
 // Delete a vehicle
 const deleteVehicle = async (req, res) => {
   try {
@@ -165,7 +178,6 @@ const deleteVehicle = async (req, res) => {
 
 module.exports = {
   getVehicles,
-  getRegions,
   createVehicle,
   updateVehicle,
   deleteVehicle

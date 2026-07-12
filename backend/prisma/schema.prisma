@@ -28,6 +28,19 @@ enum DriverStatus {
   SUSPENDED
 }
 
+enum TripStatus {
+  DRAFT
+  DISPATCHED
+  COMPLETED
+  CANCELLED
+}
+
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
 model User {
   id       Int    @id @default(autoincrement())
   name     String
@@ -39,15 +52,19 @@ model User {
 }
 
 model Vehicle {
-  id              Int           @id @default(autoincrement())
-  regNumber       String        @unique @map("reg_number")
-  nameModel       String        @map("name_model")
+  id              Int              @id @default(autoincrement())
+  regNumber       String           @unique @map("reg_number")
+  nameModel       String           @map("name_model")
   type            String
-  maxLoadCapacity Decimal       @map("max_load_capacity")
-  odometer        Decimal       @default(0)
-  acquisitionCost Decimal       @map("acquisition_cost")
-  status          VehicleStatus @default(AVAILABLE)
+  maxLoadCapacity Decimal          @map("max_load_capacity")
+  odometer        Decimal          @default(0)
+  acquisitionCost Decimal          @map("acquisition_cost")
+  status          VehicleStatus    @default(AVAILABLE)
   region          String
+  trips           Trip[]
+  maintenanceLogs MaintenanceLog[]
+  fuelLogs        FuelLog[]
+  expenses        Expense[]
 
   @@map("vehicles")
 }
@@ -61,6 +78,64 @@ model Driver {
   contactNumber   String       @map("contact_number")
   safetyScore     Decimal      @default(100) @map("safety_score")
   status          DriverStatus @default(AVAILABLE)
+  trips           Trip[]
 
   @@map("drivers")
+}
+
+model Trip {
+  id              Int        @id @default(autoincrement())
+  source          String
+  destination     String
+  vehicleId       Int        @map("vehicle_id")
+  driverId        Int        @map("driver_id")
+  cargoWeight     Decimal    @map("cargo_weight")
+  plannedDistance  Decimal    @map("planned_distance")
+  actualDistance   Decimal?   @map("actual_distance")
+  fuelConsumed    Decimal?   @map("fuel_consumed")
+  status          TripStatus @default(DRAFT)
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  vehicle         Vehicle    @relation(fields: [vehicleId], references: [id])
+  driver          Driver     @relation(fields: [driverId], references: [id])
+
+  @@map("trips")
+}
+
+model MaintenanceLog {
+  id               Int               @id @default(autoincrement())
+  vehicleId        Int               @map("vehicle_id")
+  issueDescription String            @map("issue_description")
+  status           MaintenanceStatus @default(OPEN)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  closedAt         DateTime?         @map("closed_at")
+
+  vehicle          Vehicle           @relation(fields: [vehicleId], references: [id])
+
+  @@map("maintenance_logs")
+}
+
+model FuelLog {
+  id        Int      @id @default(autoincrement())
+  vehicleId Int      @map("vehicle_id")
+  liters    Decimal
+  cost      Decimal
+  date      DateTime
+
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id])
+
+  @@map("fuel_logs")
+}
+
+model Expense {
+  id        Int      @id @default(autoincrement())
+  vehicleId Int      @map("vehicle_id")
+  type      String
+  amount    Decimal
+  date      DateTime
+
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id])
+
+  @@map("expenses")
 }
