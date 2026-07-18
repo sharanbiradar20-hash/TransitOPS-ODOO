@@ -7,7 +7,7 @@ const Sidebar = () => {
 
   const formatRole = (roleStr) => {
     if (!roleStr) return '';
-    return roleStr.replace('_', ' ');
+    return roleStr.replace(/_/g, ' ');
   };
 
   return (
@@ -167,7 +167,7 @@ const Sidebar = () => {
           <div className="sidebar-user-name" title={name}>
             {name || 'Staff User'}
           </div>
-          <div className={`role-badge ${role?.toLowerCase().replace('_', '-') || ''}`}>
+          <div className={`role-badge ${role?.toLowerCase().replace(/_/g, '-') || ''}`}>
             {formatRole(role) || 'NO ROLE'}
           </div>
         </div>

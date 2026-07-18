@@ -63,8 +63,7 @@ const LoginPage = () => {
           <div className="auth-footer">
             <p>Demo accounts (Backend pre-loaded):</p>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-              <strong>Fleet Mgr:</strong> manager@transitops.com (pw: password)<br/>
-              <strong>Safety Officer:</strong> safety@transitops.com (pw: password)
+              <strong>Fleet Mgr:</strong> test@transitops.com (pw: 123456)
             </p>
           </div>
         </div>

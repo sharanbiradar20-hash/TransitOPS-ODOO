@@ -65,7 +65,7 @@ const DriversPage = () => {
       loadDrivers();
     } catch (err) {
       console.error('Error saving driver:', err);
-      const msg = err.response?.data?.message || 'Failed to submit driver details.';
+      const msg = err.response?.data?.error || 'Failed to submit driver details.';
       setError(msg);
     }
   };
@@ -86,7 +86,7 @@ const DriversPage = () => {
         }
       } catch (err) {
         console.error('Error deleting driver:', err);
-        setError(err.response?.data?.message || 'Failed to delete driver.');
+        setError(err.response?.data?.error || 'Failed to delete driver.');
       }
     }
   };
@@ -98,7 +98,7 @@ const DriversPage = () => {
       loadDrivers();
     } catch (err) {
       console.error('Error updating driver safety score:', err);
-      setError(err.response?.data?.message || 'Failed to update safety score.');
+      setError(err.response?.data?.error || 'Failed to update safety score.');
     }
   };
 

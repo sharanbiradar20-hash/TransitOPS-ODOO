@@ -89,7 +89,7 @@ const VehiclesPage = () => {
       loadRegions();
     } catch (err) {
       console.error('Error saving vehicle:', err);
-      const msg = err.response?.data?.message || 'Failed to submit vehicle. Check input types and uniqueness.';
+      const msg = err.response?.data?.error || 'Failed to submit vehicle. Check input types and uniqueness.';
       setError(msg);
     }
   };
@@ -112,7 +112,7 @@ const VehiclesPage = () => {
         }
       } catch (err) {
         console.error('Error deleting vehicle:', err);
-        setError(err.response?.data?.message || 'Failed to delete vehicle.');
+        setError(err.response?.data?.error || 'Failed to delete vehicle.');
       }
     }
   };
