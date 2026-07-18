@@ -33,4 +33,10 @@ app.use((req, res) => {
   res.status(404).json({ error: 'API endpoint not found.' });
 });
 
+// Global error handler (Express v5 compatible)
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal server error.' });
+});
+
 module.exports = app;

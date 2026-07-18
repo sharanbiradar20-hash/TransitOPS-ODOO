@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
       return { success: false, message: 'Invalid response from server' };
     } catch (err) {
       console.error('Login error:', err);
-      const errMsg = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      const errMsg = err.response?.data?.error || 'Login failed. Please check your credentials.';
       return { success: false, message: errMsg };
     }
   };
